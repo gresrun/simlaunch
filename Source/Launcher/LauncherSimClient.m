@@ -140,6 +140,7 @@
     if ([config respondsToSelector: @selector(setSimulatedDeviceFamily:)]) {
         /* Prefer iPad over iPhone, but only if we know it will work. */
         // TODO: Make configurable.
+        /*
         if (sdk != nil &&
             [_app.deviceFamilies containsObject: [PLSimulatorDeviceFamily ipadFamily]] && 
             [sdk.deviceFamilies containsObject: [PLSimulatorDeviceFamily ipadFamily]]) 
@@ -147,7 +148,8 @@
             [config setSimulatedDeviceFamily: [NSNumber numberWithInt: DTiPhoneSimulatoriPadFamily]]; 
         } else {
             [config setSimulatedDeviceFamily: [NSNumber numberWithInt: DTiPhoneSimulatoriPhoneFamily]];
-        }
+        }*/
+        [config setSimulatedDeviceFamily: [NSNumber numberWithInt: DTiPhoneSimulatoriPadFamily]]; 
     }
     
     [config setLocalizedClientName: @"SimLauncher"];
