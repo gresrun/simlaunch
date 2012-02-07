@@ -113,18 +113,18 @@
     }
 
     /* Load the SDK root */
-    if (sdk != nil) {
-        sdkRoot = [C(DTiPhoneSimulatorSystemRoot) rootWithSDKVersion: sdk.version];
-        if (sdkRoot == nil) {
-            NSString *fmt = NSLocalizedString(@"The iPhoneSimulator %@ SDK was not found. Please install the SDK and try again.",
-                                              @"SDK load failure alert info");
-            NSLog(@"Can't find SDK system root for version %@\n", sdk.version);
-            [self displayLaunchError: [NSString stringWithFormat: fmt, sdk.version]];
-            return;
-        }
-    } else {
+//    if (sdk != nil) {
+//        sdkRoot = [C(DTiPhoneSimulatorSystemRoot) rootWithSDKVersion: sdk.version];
+//        if (sdkRoot == nil) {
+//            NSString *fmt = NSLocalizedString(@"The iPhoneSimulator %@ SDK was not found. Please install the SDK and try again.",
+//                                              @"SDK load failure alert info");
+//            NSLog(@"Can't find SDK system root for version %@\n", sdk.version);
+//            [self displayLaunchError: [NSString stringWithFormat: fmt, sdk.version]];
+//            return;
+//        }
+//    } else {
         sdkRoot = [C(DTiPhoneSimulatorSystemRoot) defaultRoot];
-    }
+//    }
     
     NSLog(@"SDK Root: %@\n", sdkRoot);
     
