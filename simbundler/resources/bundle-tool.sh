@@ -5,6 +5,7 @@
 #
 # Ported from Erica Sadun's AppleScript bundler
 # bastardized by Ashley Towns <ashleyis@mogeneration.com>
+# further bastardized by Crufty
 
 PLIST_CMD="/usr/libexec/PlistBuddy"
 RSYNC="/usr/bin/rsync -aE"
@@ -21,9 +22,20 @@ INVALID_DEVICE_FAMILY=4
 SOURCE_APP_INVALID=4
 DESTINATION_WRITE_FAILED=5
 
+# Default search for Launcher.app in path where we were launched from
+ORIGINAL_PATH="$(pwd)"
+cd "$(dirname $0)"
+BIN_PATH="$(pwd)"
+cd "${ORIGINAL_PATH}"
+TEMPLATE_APP="${BIN_PATH}/Launcher.app"
+if [ ! -d "${TEMPLATE_APP}" ]
+then
+	TEMPLATE_APP="/usr/local/share/simbundler/Launcher.app"
+fi
+
 # Print Usage
 print_usage () {
-    echo "Usage: $0 [--help] [--source-app <app>]"
+    echo "Usage: $0 [--help] [--source-app <app>] [--dest <path>]"
 }
 
 # Check if the previous command completed successfully. If not, echo the
@@ -52,7 +64,8 @@ parse_plist () {
 	# Read the display name
 	APP_NAME=`${PLIST_CMD} -c "Print CFBundleDisplayName" "${PLIST}"`
 	APP_BUNDLE_ID=`${PLIST_CMD} -c "Print CFBundleIdentifier" "${PLIST}"`
-	APP_ICON=`${PLIST_CMD} -c "Print CFBundleIconFile" "${PLIST}"`
+	APP_ICON=`${PLIST_CMD} -c "Print CFBundleIconFile" "${PLIST}" 2>/dev/null`
+	DEV_ARCH=`${PLIST_CMD} -c "Print UIDeviceFamily:0" "${PLIST}" 2>/dev/null`
 
 	if [ -z "${APP_NAME}" ]; then
 		echo "${APP} is missing a valid CFBundleDisplayName"
@@ -70,6 +83,13 @@ parse_plist () {
 		APP_ICON="${APP}/Icon.png"
 	else
 		APP_ICON="${APP}/${APP_ICON}"
+	fi
+
+	if [ "${DEV_ARCH}" == "1" ]
+	then
+		DEVICE_FAMILY="iPhone"
+	else
+		DEVICE_FAMILY="iPad"
 	fi
 }
 
@@ -162,6 +182,11 @@ while [ $# -gt 0 ]; do
         APP="$1"
         shift
         ;;
+    --dest)
+        shift
+        DEST_PATH="$1"
+        shift
+        ;;
     --help)
         print_usage
         exit 0
@@ -172,9 +197,6 @@ while [ $# -gt 0 ]; do
         exit ${USAGE_ERROR}
     esac
 done
-
-TEMPLATE_APP="/usr/local/share/simbundler/Launcher.app"
-DEVICE_FAMILY="iPad"
 
 if [ -z "${APP}" ]; then
     echo "--source-app must be supplied"
@@ -189,7 +211,7 @@ if [ ! -d "${APP}" ]; then
 fi
 
 if [ ! -d "${TEMPLATE_APP}" ]; then
-	echo "No template app found at ${APP}."
+	echo "No template app found at ${TEMPLATE_APP}."
 	exit ${SOURCE_APP_MISSING}
 fi
 
@@ -197,8 +219,18 @@ fi
 parse_plist
 echo "App Name: ${APP_NAME}"
 
-# Compute the destination path
-compute_dest_path
+if [ -z "${DEST_PATH}" ]
+then
+	# Compute the destination path
+	compute_dest_path
+else
+	DEST_PATH=`echo "${DEST_PATH}" | sed -e 's/\.app$//'`.app
+	if [ -d "${DEST_PATH}" ]
+	then
+		rm -rf "${DEST_PATH}"
+	fi
+	APP_DEST="${DEST_PATH}"
+fi
 echo "Destination: ${APP_DEST}"
 
 # Populate the destination with the template data
