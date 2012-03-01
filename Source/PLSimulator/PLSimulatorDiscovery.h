@@ -64,6 +64,10 @@
 
     /** Spotlight query used to find the SDK(s) */
     NSMetadataQuery *_query;
+    NSMetadataQuery *_xcodeQuery;
+    
+    /** xcode4.3 paths to add to the _query search scopes */
+    NSArray *_xcodeUrls;
 
     /** Set to YES if the query is running */
     BOOL _running;

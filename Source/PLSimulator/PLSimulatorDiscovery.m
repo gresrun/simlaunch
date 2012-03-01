@@ -30,6 +30,7 @@
 
 @interface PLSimulatorDiscovery (PrivateMethods)
 - (void) queryFinished: (NSNotification *) notification;
+- (void) xcodeQueryFinished: (NSNotification *) note;
 @end
 
 /**
@@ -63,18 +64,13 @@
     _canonicalSDKName = canonicalSDKName;
     _deviceFamilies = deviceFamilies;
     _query = [NSMetadataQuery new];
-
+    _xcodeQuery = [NSMetadataQuery new];
+    
     /* Set up a query for all iPhoneSimulator platform directories. We use kMDItemDisplayName rather than
      * the more correct kMDItemFSName for performance reasons -- */
-    NSArray *predicates = [NSArray arrayWithObjects:
-                           [NSPredicate predicateWithFormat: @"kMDItemDisplayName == 'iPhoneSimulator.platform'"],
-                           [NSPredicate predicateWithFormat: @"kMDItemContentTypeTree == 'public.directory'"],
-                           nil];
-    [_query setPredicate: [NSCompoundPredicate andPredicateWithSubpredicates: predicates]];
-
+    [_query setPredicate: [NSPredicate predicateWithFormat: @"kMDItemDisplayName == 'iPhoneSimulator.platform'"]];
+    
     /* We want to search the root volume for the developer tools. */
-    NSURL *root = [NSURL fileURLWithPath: @"/" isDirectory: YES];
-    [_query setSearchScopes: [NSArray arrayWithObject: root]];
 
     /* Configure result listening */
     NSNotificationCenter *nf = [NSNotificationCenter defaultCenter];
@@ -91,11 +87,33 @@
 /**
  * Start the query. A query can't be started if one is already running.
  */
-- (void) startQuery {
+- (void) startPlatformQuery {
     assert(_running == NO);
     _running = YES;
-
+    
+    NSURL *root = [NSURL fileURLWithPath: @"/" isDirectory: YES];
+    NSMutableArray *scopes = [NSMutableArray array];
+    [scopes addObject:root];
+    if([_xcodeUrls count] > 0) {
+        [scopes addObjectsFromArray:_xcodeUrls];
+    }
+    [_query setSearchScopes:scopes];
     [_query startQuery];
+}
+
+- (void)startQuery {
+    /* We want to search the root volume for the developer tools. */
+    NSURL *root = [NSURL fileURLWithPath: @"/" isDirectory:YES];
+    [_xcodeQuery setSearchScopes:[NSArray arrayWithObject:root]];
+    [_xcodeQuery setPredicate:[NSPredicate predicateWithFormat: @"kMDItemCFBundleIdentifier ='com.apple.dt.Xcode'"]];
+    NSNotificationCenter *nf = [NSNotificationCenter defaultCenter];
+    [nf addObserver: self 
+           selector: @selector(xcodeQueryFinished:)
+               name: NSMetadataQueryDidFinishGatheringNotification 
+             object: _xcodeQuery];
+    [_xcodeQuery setDelegate: self];
+    //todo: set a timer that will time out and invalidate itself then call start platform query. 
+    [_xcodeQuery startQuery];
 }
 
 @end
@@ -210,6 +228,27 @@ static NSInteger platform_compare_by_version (id obj1, id obj2, void *context) {
     
     /* Inform the delegate */
     [_delegate simulatorDiscovery: self didFindMatchingSimulatorPlatforms: sorted];
+}
+
+
+
+- (void) xcodeQueryFinished: (NSNotification *) note {
+    [_xcodeQuery stopQuery];
+    NSArray *results = [_xcodeQuery results];
+    NSMutableArray *xcodeUrls = [NSMutableArray array];
+    if ([results count] == 0)
+    {
+        return;
+    }
+    for (NSMetadataItem *item in results)
+    {
+        NSURL *itemUrl = [NSURL URLWithString:[[item valueForAttribute:(NSString *)kMDItemPath] stringByAppendingPathComponent:@"Contents"]];
+        [xcodeUrls addObject:itemUrl];
+    }
+    _xcodeUrls = [xcodeUrls copy];
+    if (!_running) {
+        [self startPlatformQuery];
+    }
 }
 
 @end
