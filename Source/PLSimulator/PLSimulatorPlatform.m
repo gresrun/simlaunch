@@ -138,6 +138,31 @@ static BOOL isBundleLoaded = NO;
 
     /* Attempt to load */
     BOOL success = [_remoteClient loadAndReturnError: outError];
+    if (!success)
+    {
+        NSLog(@"It's likely that this is running Xcode4.3 which is a single app bundle");
+        /**
+         * Xcode 4.3 relies on DevToolsFoundation.framework so if we failed 
+         * just try and load that framework which if successful will load the
+         * remoteclient framework
+         * 
+         *  we need to go back 3 path components in the []
+         * _path = Applications/Xcode.app/Contents/[Developer/Platforms/iPhoneSimulator.platform]
+         */
+        NSString *devToolsFrameworkPath = [[[[_path stringByDeletingLastPathComponent] stringByDeletingLastPathComponent] stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"OtherFrameworks/DevToolsFoundation.framework"];
+        NSBundle *dtf = [NSBundle bundleWithPath:devToolsFrameworkPath];
+        if ([dtf loadAndReturnError:NULL])
+        {
+            success = [_remoteClient loadAndReturnError:outError];
+        }
+        else
+        {
+            NSLog(@"Error loading DevToolsFoundation.framework %@", &outError);
+
+        }
+        
+    }
+    
     isBundleLoaded = success;
     return success;
 }
