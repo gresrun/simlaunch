@@ -49,6 +49,8 @@
 
     /* Spin until the SDK results are available */
     [self spinRunloopWithTimeout: 60.0 predicate: ^{ return (BOOL) (_foundSDKs != nil); }];
+    STAssertTrue(_foundSDKs.count > 0, @"no sdks found, how are your running these tests ????");
+    NSLog(@"%@", _foundSDKs);
     STAssertNotNil(_foundSDKs, @"Timed out waiting for query results");
 }
 
