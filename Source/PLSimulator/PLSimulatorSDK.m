@@ -159,6 +159,12 @@ enum {
         NSArray *devices;
         if (Get(DevicesKey, &devices, [NSArray class], NO)) {
             _deviceFamilies = [PLSimulatorUtils deviceFamiliesForDeviceCodes: devices];
+        } else {
+            devices = [[plist valueForKey:@"DefaultProperties"] valueForKey:@"SUPPORTED_DEVICE_FAMILIES"];
+            if (devices) {
+                // new sdks are different
+                _deviceFamilies = [PLSimulatorUtils deviceFamiliesForDeviceCodes:devices];
+            }
         }
 
         /* If no valid settings, assume that this is a <3.2 SDK and it supports the iPhone family */
