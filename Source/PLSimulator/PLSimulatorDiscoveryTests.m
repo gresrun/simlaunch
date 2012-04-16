@@ -35,9 +35,14 @@
 @private
     NSArray *_foundSDKs;
 }
+@property (atomic, retain) NSArray *foundSDKs;
 @end
 
 @implementation PLSimulatorDiscoveryTests
+@synthesize foundSDKs = _foundSDKs;
+- (void) setUp {
+    self.foundSDKs = nil;
+}
 
 - (void) testQuery {
     NSSet *families = [NSSet setWithObject: [PLSimulatorDeviceFamily iphoneFamily]];
@@ -54,9 +59,31 @@
     STAssertNotNil(_foundSDKs, @"Timed out waiting for query results");
 }
 
+
+- (void) testQueryios5 {
+    NSSet *families = [NSSet setWithObject: [PLSimulatorDeviceFamily iphoneFamily]];
+    PLSimulatorDiscovery *query = [[PLSimulatorDiscovery alloc] initWithMinimumVersion: @"5.1"
+                                                                      canonicalSDKName: @"iphonesimulator5.1"
+                                                                        deviceFamilies: families];
+    query.delegate = self;
+    [query startQuery];
+    
+    /* Spin until the SDK results are available */
+    [self spinRunloopWithTimeout: 60.0 predicate: ^{ return (BOOL) (_foundSDKs != nil); }];
+    NSLog(@"%@", _foundSDKs);
+    NSLog(@"Thisi is a test");
+    STAssertTrue(_foundSDKs.count > 0, @"no sdks found, how are your running these tests ????");
+    STAssertNotNil(_foundSDKs, @"Timed out waiting for query results");
+}
+
+
 // from PLSimulatorDiscoveryDelegate protocol
 - (void) simulatorDiscovery: (PLSimulatorDiscovery *) discovery didFindMatchingSimulatorPlatforms: (NSArray *) sdks {
-    _foundSDKs = sdks;
+    
+    self.foundSDKs = sdks;
 }
+
+
+
 
 @end
