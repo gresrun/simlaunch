@@ -167,5 +167,9 @@ static BOOL isBundleLoaded = NO;
     return success;
 }
 
+- (NSString *)description
+{
+    return [NSString stringWithFormat:@"<PLSimulatorPlatform:%x> path=%@, sdks=%@", (int)self, self.path, self.sdks];
+}
 
 @end
