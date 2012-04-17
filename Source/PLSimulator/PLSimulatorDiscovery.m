@@ -175,7 +175,27 @@ static NSInteger platform_compare_by_version (id obj1, id obj2, void *context) {
     NSArray *results = [_query results];
     [_query stopQuery];
     NSMutableArray *platformSDKs = [NSMutableArray arrayWithCapacity: [results count]];
-
+    
+    // A way to test this is to add the Xcode.app/Contents folder to the spotlight privacy list
+    //metadata query didn't come back with anything (happens when platform is inside xcode4.3.app
+    if([results count] == 0)
+    {
+        for (NSURL *xcode_contents in _xcodeUrls) {
+            if ([[xcode_contents absoluteString] hasSuffix:@"Contents"]) 
+            {
+                NSError *err = nil;
+                NSString *simPlat = [[xcode_contents absoluteString] stringByAppendingPathComponent:@"Developer/Platforms/iPhoneSimulator.platform"];
+                NSLog(@"%@", simPlat);
+                PLSimulatorPlatform *simPlatform = [[PLSimulatorPlatform alloc] initWithPath:simPlat error:&err]; 
+                if (err) NSLog(@"%@", err);
+                if (simPlatform) {
+                    [platformSDKs addObject:simPlatform];
+                }
+                [simPlatform release];
+            }
+        }
+    }
+    
     for (NSMetadataItem *item in results) {
         PLSimulatorPlatform *platform;
         NSString *path;
