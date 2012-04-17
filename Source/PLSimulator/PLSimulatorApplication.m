@@ -53,6 +53,14 @@
 @synthesize canonicalSDKName = _canonicalSDKName;
 @synthesize deviceFamilies = _deviceFamilies;
 
+- (void)dealloc
+{
+    [_path release];
+    [_displayName release];
+    [_canonicalSDKName release];
+    [_deviceFamilies release];
+    [super dealloc];
+}
 /**
  * Initialize with the provided application path.
  *
@@ -70,7 +78,7 @@
     }
     
     /* Save the application path */
-    _path = path;
+    _path = [path copy];
     
     /* Verify that the path exists */
     NSFileManager *fm = [NSFileManager new];
@@ -143,7 +151,10 @@
     /* Get the canonical name of the SDK that this app was built with. */
     if (!Get(SDKNameKey, &_canonicalSDKName, [NSString class], YES))
         return nil;
-
+    
+    [_displayName retain];
+    [_canonicalSDKName retain];
+    
     /* Get the list of supported devices */
     {
         NSArray *devices;
@@ -155,7 +166,7 @@
         if (_deviceFamilies == nil || [_deviceFamilies count] == 0)
             _deviceFamilies = [NSSet setWithObject: [PLSimulatorDeviceFamily iphoneFamily]];
     }
-
+    [_deviceFamilies retain];
     return self;
 }
 

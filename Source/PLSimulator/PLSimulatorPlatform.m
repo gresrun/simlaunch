@@ -56,6 +56,14 @@ static BOOL isBundleLoaded = NO;
 @synthesize path = _path;
 @synthesize sdks = _sdks;
 
+- (void)dealloc
+{
+    [_path release];
+    [_sdks release];
+    [_remoteClient release];
+    [super dealloc];
+}
+
 /**
  * Initialize with the provided simulator platform SDK path.
  *
@@ -72,7 +80,7 @@ static BOOL isBundleLoaded = NO;
         return nil;
     }
     
-    _path = path;
+    _path = [path retain];
 
     /* Verify that the path exists */
     NSFileManager *fm = [NSFileManager new];
@@ -99,7 +107,7 @@ static BOOL isBundleLoaded = NO;
 
     /* Iterate and load the SDK subdirectories */
     NSMutableArray *sdks = [NSMutableArray arrayWithCapacity: [sdkPaths count]];
-    _sdks = sdks;
+    _sdks = [sdks retain];
 
     for (NSString *sdkPath in sdkPaths) {
         NSString *absolutePath = [sdkDir stringByAppendingPathComponent: sdkPath];
@@ -134,7 +142,7 @@ static BOOL isBundleLoaded = NO;
 
     /* Determine the path */
     NSString *path = [_path stringByAppendingPathComponent: REMOTE_CLIENT_FRAMEWORK];
-    _remoteClient = [NSBundle bundleWithPath: path];
+    _remoteClient = [[NSBundle bundleWithPath: path] retain];
 
     /* Attempt to load */
     BOOL success = [_remoteClient loadAndReturnError: outError];

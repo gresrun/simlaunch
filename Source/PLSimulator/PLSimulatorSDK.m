@@ -66,6 +66,16 @@ enum {
 @synthesize canonicalName = _canonicalName;
 @synthesize deviceFamilies = _deviceFamilies;
 
+
+- (void)dealloc
+{
+    [_version release];
+    [_path release];
+    [_canonicalName release];
+    [_deviceFamilies release];
+    [super dealloc];
+}
+
 /**
  * Initialize with the provided SDK path.
  *
@@ -83,7 +93,7 @@ enum {
     }
 
     /* Save the SDK path */
-    _path = path;
+    _path = [path copy];
     
     /* Verify that the path exists */
     NSFileManager *fm = [NSFileManager new];
@@ -151,10 +161,12 @@ enum {
     /* Fetch required values */
     if (!Get(VersionKey, &_version, [NSString class], YES))
         return nil;
-
+    [_version retain];
+    
     if (!Get(CanonicalNameKey, &_canonicalName, [NSString class], YES))
         return nil;
-
+    [_canonicalName retain];
+    
     /* Get the list of supported devices */
     {
         NSArray *devices;
@@ -168,7 +180,7 @@ enum {
         if (_deviceFamilies == nil || [_deviceFamilies count] == 0)
             _deviceFamilies = [NSSet setWithObject: [PLSimulatorDeviceFamily iphoneFamily]] ;
     }
-
+    [_deviceFamilies retain];
     return self;
 }
 

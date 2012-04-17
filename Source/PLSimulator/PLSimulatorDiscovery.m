@@ -43,6 +43,20 @@
 
 @synthesize delegate = _delegate;
 
+
+- (void)dealloc
+{
+    _delegate = nil;
+    [_version release];
+    [_canonicalSDKName release];
+    [_deviceFamilies release];
+    _query.delegate = nil;
+    [_query release];
+    [_xcodeQuery release];
+    [_xcodeUrls release];
+    [super dealloc];
+}
+
 /**
  * Initialize a new query with the requested minumum simulator SDK version.
  *
@@ -61,8 +75,8 @@
         return nil;
 
     _version = [version copy];
-    _canonicalSDKName = canonicalSDKName;
-    _deviceFamilies = deviceFamilies;
+    _canonicalSDKName = [canonicalSDKName copy];
+    _deviceFamilies = [deviceFamilies copy];
     _query = [NSMetadataQuery new];
     _xcodeQuery = [NSMetadataQuery new];
     
@@ -257,6 +271,7 @@ static NSInteger platform_compare_by_version (id obj1, id obj2, void *context) {
 - (void) xcodeQueryFinished: (NSNotification *) note {
     NSArray *results = [_xcodeQuery results];
     [_xcodeQuery stopQuery];
+    _xcodeQuery.delegate = nil;
     NSMutableArray *xcodeUrls = [NSMutableArray array];
     if ([results count] == 0)
     {

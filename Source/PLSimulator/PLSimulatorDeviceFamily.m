@@ -52,13 +52,16 @@ static PLSimulatorDeviceFamily *iPadSingleton = nil;
     /* Subclass guard */
     if ([self class] != [PLSimulatorDeviceFamily class])
         return;
-
-    /* Create our singletons */
-    iPhoneSingleton = [[PLSimulatorDeviceFamily alloc] initWithLocalizedName: NSLocalizedString(@"iPhone", @"iPhone Device Family")
-                                                            deviceFamilyCode: DTiPhoneSimulatoriPhoneFamily];
-
-    iPadSingleton = [[PLSimulatorDeviceFamily alloc] initWithLocalizedName: NSLocalizedString(@"iPad", @"iPad Device Family")
-                                                          deviceFamilyCode: DTiPhoneSimulatoriPadFamily];
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        /* Create our singletons */
+        iPhoneSingleton = [[PLSimulatorDeviceFamily alloc] initWithLocalizedName: NSLocalizedString(@"iPhone", @"iPhone Device Family")
+                                                                deviceFamilyCode: DTiPhoneSimulatoriPhoneFamily];
+        
+        iPadSingleton = [[PLSimulatorDeviceFamily alloc] initWithLocalizedName: NSLocalizedString(@"iPad", @"iPad Device Family")
+                                                              deviceFamilyCode: DTiPhoneSimulatoriPadFamily];
+        
+    });
 }
 
 
