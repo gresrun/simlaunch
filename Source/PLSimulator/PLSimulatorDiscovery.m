@@ -169,10 +169,11 @@ static NSInteger platform_compare_by_version (id obj1, id obj2, void *context) {
 - (void) queryFinished: (NSNotification *) note {
     /* Received the full spotlight query result set. No longer running */
     _running = NO;
-
+    
     /* Convert the items into PLSimulatorPlatform instances, filtering out results that don't match the minimum version
      * and supported device families. */
     NSArray *results = [_query results];
+    [_query stopQuery];
     NSMutableArray *platformSDKs = [NSMutableArray arrayWithCapacity: [results count]];
 
     for (NSMetadataItem *item in results) {
@@ -220,6 +221,7 @@ static NSInteger platform_compare_by_version (id obj1, id obj2, void *context) {
         if (!hasMinVersion || !hasDeviceFamily)// || !hasExpectedSDK)
             continue;
 
+        NSLog(@"Found Platform: %@", platform);
         [platformSDKs addObject: platform];
     }
 
@@ -233,8 +235,8 @@ static NSInteger platform_compare_by_version (id obj1, id obj2, void *context) {
 
 
 - (void) xcodeQueryFinished: (NSNotification *) note {
-    [_xcodeQuery stopQuery];
     NSArray *results = [_xcodeQuery results];
+    [_xcodeQuery stopQuery];
     NSMutableArray *xcodeUrls = [NSMutableArray array];
     if ([results count] == 0)
     {
