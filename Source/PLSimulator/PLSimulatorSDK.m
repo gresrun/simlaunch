@@ -174,7 +174,7 @@ enum {
 
 - (NSString *)description
 {
-    NSString *s = [NSString stringWithFormat:@"<%@: canonicalName:%@ version:%@ deviceFamilies: path:%@>", [self class], _canonicalName, _version, _deviceFamilies, _path];
+    NSString *s = [NSString stringWithFormat:@"<%@: canonicalName:%@ version:%@ deviceFamilies:%@ path:%@>", [self class], _canonicalName, _version, _deviceFamilies, _path];
     return s;
 }
 @end

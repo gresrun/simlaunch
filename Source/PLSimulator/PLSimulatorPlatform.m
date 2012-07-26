@@ -157,7 +157,7 @@ static BOOL isBundleLoaded = NO;
         }
         else
         {
-            NSLog(@"Error loading DevToolsFoundation.framework %@", &outError);
+//            NSLog(@"Error loading DevToolsFoundation.framework %@", &&outError);
 
         }
         
