@@ -142,7 +142,7 @@
     [panel setAllowsMultipleSelection: YES];
     
     /* Run */
-    if ([panel runModalForTypes: [NSArray arrayWithObject: @"app"]] != NSOKButton) {
+    if ([panel runModal]){ //ForTypes: [NSArray arrayWithObject: @"app"]] != NSOKButton) {
         [[NSApplication sharedApplication] terminate: self];
         return;
     }
