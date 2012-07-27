@@ -165,6 +165,54 @@ static NSInteger platform_compare_by_version (id obj1, id obj2, void *context) {
         return NSOrderedSame;
 }
 
+- (PLSimulatorPlatform *)platformForPath:(NSString *)path
+{
+	NSError *error = nil;
+	
+	PLSimulatorPlatform *platform = [[PLSimulatorPlatform alloc] initWithPath:path error: &error];
+	if (platform == nil)
+	{
+		//NSLog(@"Skipping platform discovery result '%@', failed to load platform SDK meta-data: %@", path, error);
+		return nil;
+	}
+	
+	/* Check the minimum version and device families */
+	BOOL hasMinVersion = NO;
+	BOOL hasDeviceFamily = NO;
+	BOOL hasExpectedSDK = NO;
+	
+	/* Skip filters that are not required */
+	if (_version == nil)
+		hasMinVersion = YES;
+    
+	if (_canonicalSDKName == nil)
+		hasExpectedSDK = YES;
+	
+	for (PLSimulatorSDK *sdk in platform.sdks) {
+		/* If greater than or equal to the minimum version, this platform SDK meets the requirements */
+		if (_version != nil && rpm_vercomp([sdk.version UTF8String], [_version UTF8String]) >= 0)
+			hasMinVersion = YES;
+		
+		/* Also check for the canonical SDK name */
+		if (_canonicalSDKName != nil && [_canonicalSDKName isEqualToString: sdk.canonicalName])
+			hasExpectedSDK = YES;
+		
+		/* If any our requested families are included, this platform SDK meets the requirements. */
+		for (NSString *family in _deviceFamilies) {
+			if ([sdk.deviceFamilies containsObject: family]) {
+				hasDeviceFamily = YES;
+				continue;
+			}
+		}
+	}
+	
+	if (!hasMinVersion || !hasDeviceFamily)// || !hasExpectedSDK)
+		return nil;
+	
+	NSLog(@"Found Platform: %@", platform);
+	return platform;
+}
+
 // NSMetadataQueryDidFinishGatheringNotification
 - (void) queryFinished: (NSNotification *) note {
     /* Received the full spotlight query result set. No longer running */
@@ -196,53 +244,14 @@ static NSInteger platform_compare_by_version (id obj1, id obj2, void *context) {
         }
     }
     
-    for (NSMetadataItem *item in results) {
-        PLSimulatorPlatform *platform;
-        NSString *path;
-        NSError *error;
-
-        path = [[item valueForAttribute: (NSString *) kMDItemPath] stringByResolvingSymlinksInPath];
-        platform = [[PLSimulatorPlatform alloc] initWithPath: path error: &error];
-        if (platform == nil) {
-            NSLog(@"Skipping platform discovery result '%@', failed to load platform SDK meta-data: %@", path, error);
-            continue;
-        }
-
-        /* Check the minimum version and device families */
-        BOOL hasMinVersion = NO;
-        BOOL hasDeviceFamily = NO;
-        BOOL hasExpectedSDK = NO;
-
-        /* Skip filters that are not required */
-        if (_version == nil)
-            hasMinVersion = YES;
-    
-        if (_canonicalSDKName == nil)
-            hasExpectedSDK = YES;
-
-        for (PLSimulatorSDK *sdk in platform.sdks) {
-            /* If greater than or equal to the minimum version, this platform SDK meets the requirements */
-            if (_version != nil && rpm_vercomp([sdk.version UTF8String], [_version UTF8String]) >= 0)
-                hasMinVersion = YES;
-            
-            /* Also check for the canonical SDK name */
-            if (_canonicalSDKName != nil && [_canonicalSDKName isEqualToString: sdk.canonicalName])
-                hasExpectedSDK = YES;
-
-            /* If any our requested families are included, this platform SDK meets the requirements. */
-            for (NSString *family in _deviceFamilies) {
-                if ([sdk.deviceFamilies containsObject: family]) {
-                    hasDeviceFamily = YES;
-                    continue;
-                }
-            }
-        }
-
-        if (!hasMinVersion || !hasDeviceFamily)// || !hasExpectedSDK)
-            continue;
-
-        NSLog(@"Found Platform: %@", platform);
-        [platformSDKs addObject: platform];
+    for (NSMetadataItem *item in results)
+	{
+        NSString *path = [[item valueForAttribute: (NSString *) kMDItemPath] stringByResolvingSymlinksInPath];
+        PLSimulatorPlatform *platform = [self platformForPath:path];
+		if (platform)
+		{
+			[platformSDKs addObject:platform];
+		}
     }
 
     /* Sort by version, try to choose the most stable SDK of the available set. */
@@ -262,12 +271,34 @@ static NSInteger platform_compare_by_version (id obj1, id obj2, void *context) {
     {
         return;
     }
-    for (NSMetadataItem *item in results)
-    {
-        NSURL *itemUrl = [NSURL URLWithString:[[item valueForAttribute:(NSString *)kMDItemPath] stringByAppendingPathComponent:@"Contents"]];
+	NSMutableArray *platforms = [NSMutableArray new];
+    for (NSMetadataItem *item in results) {
+		NSString *path = [item valueForAttribute:(NSString *)kMDItemPath];
+		NSString *possiblePlatformPath = [path stringByAppendingPathComponent:@"Contents/Developer/Platforms/iPhoneSimulator.platform"];
+		
+		// Is it a self contained xcode
+		if ([[NSFileManager defaultManager] fileExistsAtPath:possiblePlatformPath]) {
+			PLSimulatorPlatform *platform = [self platformForPath:possiblePlatformPath];
+			if (platform) {
+				[platforms addObject:platform];
+			}
+		}
+        NSURL *itemUrl = [NSURL URLWithString:[path stringByAppendingPathComponent:@"Contents"]];
         [xcodeUrls addObject:itemUrl];
     }
+
+	// yes, yes it is a self contained xcode, don't bother going looking for anything else 
+	if ([platforms count] > 0) {
+		/* Inform the delegate */
+		[_delegate simulatorDiscovery:self
+	didFindMatchingSimulatorPlatforms: [platforms sortedArrayUsingFunction:platform_compare_by_version
+																   context: nil]];
+		return;
+	}
+
+	
     _xcodeUrls = [xcodeUrls copy];
+	
     if (!_running) {
         [self startPlatformQuery];
     }
