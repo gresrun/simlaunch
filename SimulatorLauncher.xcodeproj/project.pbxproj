@@ -1198,7 +1198,6 @@
 				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				INFOPLIST_FILE = "Resources/Launcher/Launcher-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = Launcher;
 			};
 			name = Debug;
@@ -1216,7 +1215,6 @@
 				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				INFOPLIST_FILE = "Resources/Launcher/Launcher-Info.plist";
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = Launcher;
 			};
 			name = Release;
@@ -1231,8 +1229,8 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = macosx;
 				WARNING_CFLAGS = (
 					"-Wall",
 					"-Wextra",
@@ -1253,7 +1251,7 @@
 				GCC_ENABLE_OBJC_GC = required;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				SDKROOT = macosx;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				WARNING_CFLAGS = (
 					"-Wall",
 					"-Wextra",
