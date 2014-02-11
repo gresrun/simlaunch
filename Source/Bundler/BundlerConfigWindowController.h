@@ -70,9 +70,6 @@
 
     /** Device families to be selected from. */
     NSArray *_deviceFamilies;
-
-    /** Delegate */
-    id<BundlerConfigWindowControllerDelegate> _delegate;
 }
 
 - (id) initWithSimulatorApp: (PLSimulatorApplication *) app;
@@ -81,7 +78,7 @@
 @property(readonly) PLSimulatorApplication *application;
 
 /** Controller delegate. */
-@property(assign) id<BundlerConfigWindowControllerDelegate> delegate;
+@property(weak) id<BundlerConfigWindowControllerDelegate> delegate;
 
 - (IBAction) cancel: (id) sender;
 - (IBAction) createBundle: (id) sender;

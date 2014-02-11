@@ -47,7 +47,7 @@
     if ((self = [super init]) == nil)
         return nil;
     
-    _taskBlocks = [NSMapTable mapTableWithStrongToStrongObjects];
+    _taskBlocks = [NSMapTable strongToStrongObjectsMapTable];
 
     return self;
 }

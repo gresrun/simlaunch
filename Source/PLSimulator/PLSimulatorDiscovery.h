@@ -71,9 +71,6 @@
 
     /** Set to YES if the query is running */
     BOOL _running;
-
-    /** Delegate */
-    id<PLSimulatorDiscoveryDelegate> _delegate;
 }
 
 - (id) initWithMinimumVersion: (NSString *) version canonicalSDKName: (NSString *) sdkName deviceFamilies: (NSSet *) deviceFamilies;
@@ -81,6 +78,6 @@
 - (void) startQuery;
 
 /** Search delegate. */
-@property(assign) id<PLSimulatorDiscoveryDelegate> delegate;
+@property(weak) id<PLSimulatorDiscoveryDelegate> delegate;
 
 @end

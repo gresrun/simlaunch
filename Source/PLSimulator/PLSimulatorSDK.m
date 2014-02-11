@@ -149,12 +149,17 @@ enum {
     };
 
     /* Fetch required values */
-    if (!Get(VersionKey, &_version, [NSString class], YES))
+	NSString *version = nil;
+    if (!Get(VersionKey, &version, [NSString class], YES))
+        return nil;
+	_version = version;
+
+	NSString *canonicalName = nil;
+    if (!Get(CanonicalNameKey, &canonicalName, [NSString class], YES))
         return nil;
 
-    if (!Get(CanonicalNameKey, &_canonicalName, [NSString class], YES))
-        return nil;
-
+	_canonicalName = canonicalName;
+	
     /* Get the list of supported devices */
     {
         NSArray *devices;

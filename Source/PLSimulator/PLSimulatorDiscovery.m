@@ -41,8 +41,6 @@
  */
 @implementation PLSimulatorDiscovery
 
-@synthesize delegate = _delegate;
-
 /**
  * Initialize a new query with the requested minumum simulator SDK version.
  *
@@ -239,7 +237,6 @@ static NSInteger platform_compare_by_version (id obj1, id obj2, void *context) {
                 if (simPlatform) {
                     [platformSDKs addObject:simPlatform];
                 }
-                [simPlatform release];
             }
         }
     }

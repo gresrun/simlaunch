@@ -135,15 +135,22 @@
         
         return NO;
     };
-
+	
+	NSString *displayName = nil;
+	
     /* Get the application's display name. */
-    if (!Get((id)CFBundleDisplayName, &_displayName, [NSString class], YES))
+    if (!Get((id)CFBundleDisplayName, &displayName, [NSString class], YES))
         return nil;
 
+	_displayName = displayName;
+	
+	NSString *canonicalSDKName = nil;
     /* Get the canonical name of the SDK that this app was built with. */
-    if (!Get(SDKNameKey, &_canonicalSDKName, [NSString class], YES))
+    if (!Get(SDKNameKey, &canonicalSDKName, [NSString class], YES))
         return nil;
-
+	
+	_canonicalSDKName = canonicalSDKName;
+	
     /* Get the list of supported devices */
     {
         NSArray *devices;
