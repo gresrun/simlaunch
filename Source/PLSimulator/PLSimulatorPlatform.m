@@ -29,6 +29,7 @@
 #import "PLSimulatorPlatform.h"
 
 #import "PLSimulator.h"
+#import "iPhoneSimulatorRemoteClient.h"
 
 /**
  * Global variable used to track if the iPhoneSimulatorRemoteClient has already been loaded by any instance of this class.
@@ -40,7 +41,18 @@ static BOOL isBundleLoaded = NO;
 #define PLATFORM_SUBSDK_PATH @"Developer/SDKs/"
 
 /* Relative path to the iPhoneSimulatorRemoteClient framework */
-#define REMOTE_CLIENT_FRAMEWORK @"Developer/Library/PrivateFrameworks/iPhoneSimulatorRemoteClient.framework"
+#define REMOTE_CLIENT_FRAMEWORK @"Developer/Library/PrivateFrameworks/DVTiPhoneSimulatorRemoteClient.framework"
+
+/* Load a class from the runtime-loaded iPhoneSimulatorRemoteClient framework */
+#define C(name) NSClassFromString(@"" #name)
+
+// class-dump'ed from DVTFoundation
+@interface DVTPlatform : NSObject
+
++ (BOOL)loadAllPlatformsReturningError:(NSError **)error;
++ (id)platformForIdentifier:(NSString *)identifier;
+
+@end
 
 /**
  * Manages a Simulator Platform SDK, allows querying of the bundled PLSimulatorSDK meta-data.
@@ -127,44 +139,43 @@ static BOOL isBundleLoaded = NO;
  * @warning Only one instance of the iPhoneSimulatorRemoteClient framework may be loaded across the entire lifetime
  * of the process. Attempting to load the framework again will trigger a PLSimulatorException. 
  */
-- (BOOL) loadClientFramework: (NSError **) outError {
+- (BOOL)loadClientFramework:(NSError **)outError {
     /* Verify that it is not loaded */
-    if (isBundleLoaded)
-        [NSException raise: PLSimulatorException format: @"Attempted to load the iPhoneSimulatorRemoteClient twice"];
-
-    /* Determine the path */
-    NSString *path = [_path stringByAppendingPathComponent: REMOTE_CLIENT_FRAMEWORK];
-    _remoteClient = [NSBundle bundleWithPath: path];
-
-    /* Attempt to load */
-    BOOL success = [_remoteClient loadAndReturnError: outError];
-    if (!success)
-    {
-        NSLog(@"It's likely that this is running Xcode4.3 which is a single app bundle");
-        /**
-         * Xcode 4.3 relies on DevToolsFoundation.framework so if we failed 
-         * just try and load that framework which if successful will load the
-         * remoteclient framework
-         * 
-         *  we need to go back 3 path components in the []
-         * _path = Applications/Xcode.app/Contents/[Developer/Platforms/iPhoneSimulator.platform]
-         */
-        NSString *devToolsFrameworkPath = [[[[_path stringByDeletingLastPathComponent] stringByDeletingLastPathComponent] stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"OtherFrameworks/DevToolsFoundation.framework"];
-        NSBundle *dtf = [NSBundle bundleWithPath:devToolsFrameworkPath];
-        if ([dtf loadAndReturnError:NULL])
-        {
-            success = [_remoteClient loadAndReturnError:outError];
-        }
-        else
-        {
-//            NSLog(@"Error loading DevToolsFoundation.framework %@", &&outError);
-
-        }
-        
+    if (isBundleLoaded) {
+        [NSException raise:PLSimulatorException format:@"Attempted to load the iPhoneSimulatorRemoteClient twice"];
     }
-    
-    isBundleLoaded = success;
-    return success;
+    NSString *dvtFoundationPath = [[[[_path stringByDeletingLastPathComponent] stringByDeletingLastPathComponent] stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"SharedFrameworks/DVTFoundation.framework"];
+
+    NSBundle *dvtFoundationBundle = [NSBundle bundleWithPath:dvtFoundationPath];
+    if (![dvtFoundationBundle loadAndReturnError:outError]) {
+        return false;
+    }
+    NSString *devToolsFoundationPath = [[[[_path stringByDeletingLastPathComponent] stringByDeletingLastPathComponent] stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"OtherFrameworks/DevToolsFoundation.framework"];
+    NSBundle *devToolsFoundationBundle = [NSBundle bundleWithPath:devToolsFoundationPath];
+    if (![devToolsFoundationBundle loadAndReturnError:outError]) {
+        return false;
+    }
+    NSString *simBundlePath = [_path stringByAppendingPathComponent:REMOTE_CLIENT_FRAMEWORK];
+    NSBundle *simBundle = [NSBundle bundleWithPath:simBundlePath];
+    if (![simBundle loadAndReturnError:outError]) {
+        return false;
+    }
+    if (![C(DVTPlatform) loadAllPlatformsReturningError:outError]) {
+        return false;
+    }
+    // The following will fail if DVTPlatform hasn't loaded all platforms.
+    if (![C(DTiPhoneSimulatorSystemRoot) knownRoots]) {
+        *outError = [NSError errorWithDomain:PLSimulatorErrorDomain code:123 userInfo:nil];
+        return false;
+    };
+    // DTiPhoneSimulatorRemoteClient will make this same call, so let's assert that it's working.
+    if (![C(DVTPlatform) platformForIdentifier:@"com.apple.platform.iphonesimulator"]) {
+        *outError = [NSError errorWithDomain:PLSimulatorErrorDomain code:124 userInfo:nil];
+        return false;
+    }
+    _remoteClient = simBundle;
+    isBundleLoaded = true;
+    return true;
 }
 
 - (NSString *)description

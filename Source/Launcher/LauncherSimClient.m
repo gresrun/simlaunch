@@ -103,41 +103,51 @@
 
     NSLog(@"App Spec: %@\n", appSpec);
 
+    NSLog(@"SDKs: %@\n", _platform.sdks);
+    NSLog(@"canonicalSDKName: %@\n", _app.canonicalSDKName);
+
     /* Fetch the SDK to be used */
     PLSimulatorSDK *sdk = nil;
     for (PLSimulatorSDK *anSDK in _platform.sdks) {
-        if ([anSDK.canonicalName isEqual: _app.canonicalSDKName]) {
+        if ([anSDK.canonicalName isEqual:_app.canonicalSDKName]) {
             sdk = anSDK;
             break;
         }
     }
 
+    NSLog(@"SDK: %@\n", sdk);
+
     /* Load the SDK root */
-//    if (sdk != nil) {
-//        sdkRoot = [C(DTiPhoneSimulatorSystemRoot) rootWithSDKVersion: sdk.version];
-//        if (sdkRoot == nil) {
-//            NSString *fmt = NSLocalizedString(@"The iPhoneSimulator %@ SDK was not found. Please install the SDK and try again.",
-//                                              @"SDK load failure alert info");
-//            NSLog(@"Can't find SDK system root for version %@\n", sdk.version);
-//            [self displayLaunchError: [NSString stringWithFormat: fmt, sdk.version]];
-//            return;
-//        }
-//    } else {
-        sdkRoot = [C(DTiPhoneSimulatorSystemRoot) defaultRoot];
-//    }
-    
+    if (sdk != nil) {
+        sdkRoot = [C(DTiPhoneSimulatorSystemRoot) rootWithSDKVersion:sdk.version];
+        if (sdkRoot == nil) {
+            NSLog(@"knownRoots=%@", [C(DTiPhoneSimulatorSystemRoot) knownRoots]);
+            NSLog(@"defaultRoot=%@", [C(DTiPhoneSimulatorSystemRoot) defaultRoot]);
+            NSLog(@"latestRoot=%@", [LauncherSimClient latestRoot]);
+            NSString *fmt = NSLocalizedString(@"The iPhoneSimulator %@ SDK was not found. Please install the SDK and try again.",
+                                              @"SDK load failure alert info");
+            NSLog(@"Can't find SDK system root for version %@\n", sdk.version);
+            [self displayLaunchError: [NSString stringWithFormat:fmt, sdk.version]];
+            return;
+        }
+    } else {
+        sdkRoot = [LauncherSimClient latestRoot];
+    }
+
     NSLog(@"SDK Root: %@\n", sdkRoot);
     
     /* Set up the session configuration */
     config = [[C(DTiPhoneSimulatorSessionConfig) alloc] init];
-    [config setApplicationToSimulateOnStart: appSpec];
-    [config setSimulatedSystemRoot: sdkRoot];
-    [config setSimulatedApplicationShouldWaitForDebugger: NO];
-    
-    [config setSimulatedApplicationLaunchArgs: [NSArray array]];
-    [config setSimulatedApplicationLaunchEnvironment: [NSDictionary dictionary]];
+    [config setApplicationToSimulateOnStart:appSpec];
+    [config setSimulatedSystemRoot:sdkRoot];
+    [config setSimulatedDeviceFamily:@(DTiPhoneSimulatoriPadFamily)];
+    [config setSimulatedApplicationShouldWaitForDebugger:NO];
+    [config setLocalizedClientName:@"SimLauncher"];
+    [config setSimulatedApplicationLaunchArgs:@[]];
+    [config setSimulatedApplicationLaunchEnvironment:@{}];
+    [config setSimulatedDeviceInfoName:@"iPad"];
+    [config setSimulatedArchitecture:@"x86_64"];
 
-    if ([config respondsToSelector: @selector(setSimulatedDeviceFamily:)]) {
         /* Prefer iPad over iPhone, but only if we know it will work. */
         // TODO: Make configurable.
         /*
@@ -149,24 +159,30 @@
         } else {
             [config setSimulatedDeviceFamily: [NSNumber numberWithInt: DTiPhoneSimulatoriPhoneFamily]];
         }*/
-        [config setSimulatedDeviceFamily: [NSNumber numberWithInt: DTiPhoneSimulatoriPadFamily]]; 
-    }
-    
-    [config setLocalizedClientName: @"SimLauncher"];
+
     
     /* Start the session */
     session = [[C(DTiPhoneSimulatorSession) alloc] init];
     [session setDelegate: self];
-    [session setSimulatedApplicationPID: [NSNumber numberWithInt: 35]];
+    [session setSessionConfig:config];
     
-    if (![session requestStartWithConfig: config timeout: 30.0 error: &error]) {
+    if (![session requestStartWithConfig:config timeout:30.0 error:&error]) {
         NSLog(@"Could not start simulator session: %@", error);
-
         NSString *text = NSLocalizedString(@"The iPhone Simulator could not be started. If another Simulator application "
                                            "is currently running, please close the Simulator and try again.", 
                                            @"Simulator error alert info");
         [self displayLaunchError: text];
     }
+}
+
++ (id)latestRoot {
+    id latest = [[C(DTiPhoneSimulatorSystemRoot) knownRoots] lastObject];
+    for (id root in [C(DTiPhoneSimulatorSystemRoot) knownRoots]) {
+        if ([[root sdkVersion] compare:[latest sdkVersion] options:(NSLiteralSearch | NSNumericSearch | NSCaseInsensitiveSearch)] == NSOrderedDescending) {
+            latest = root;
+        }
+    }
+    return latest;
 }
 
 // from DTiPhoneSimulatorSessionDelegate protocol
