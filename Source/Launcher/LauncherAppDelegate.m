@@ -87,7 +87,6 @@
                                                        deviceFamilies: _app.deviceFamilies];
     _discovery.delegate = self;
     [_discovery startQuery];
-    
 }
 
 // from PLSimulatorDiscoveryDelegate protocol
@@ -108,7 +107,17 @@
     }
 
     /* Launch with the discovery-preferred platform */
-    LauncherSimClient *client = [[LauncherSimClient alloc] initWithPlatform: [platforms objectAtIndex: 0] app: _app];
+    LauncherSimClient *client = [[LauncherSimClient alloc] initWithPlatform:platforms[0] app:_app];
+    NSNumber *deviceFamilyCode = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"PLDefaultUIDeviceFamily"];
+    if (deviceFamilyCode) {
+        NSLog(@"Found preferredDeviceFamilyCode=%@", deviceFamilyCode);
+        PLSimulatorDeviceFamily *deviceFamily =
+            [PLSimulatorDeviceFamily deviceFamilyForDeviceCode:[deviceFamilyCode integerValue]];
+        if (deviceFamily) {
+            client.preferredDeviceFamily = deviceFamily;
+            NSLog(@"Set preferredDeviceFamily=%@", deviceFamily);
+        }
+    }
     [client launch];
 }
 

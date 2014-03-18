@@ -40,7 +40,14 @@
  * Implements loading of the iPhoneSimulatorRemoteClient framework and attempts
  * to launch a given simulator application.
  */
-@implementation LauncherSimClient
+@implementation LauncherSimClient {
+@private
+    /** Platform to use for launching. */
+    PLSimulatorPlatform *_platform;
+
+    /** Application to be launched. */
+    PLSimulatorApplication *_app;
+}
 
 /**
  * Initialize with the given simulator platform and application.
@@ -48,13 +55,12 @@
  * @param platform Platform to use for launching.
  * @param app Application to be launched.
  */
-- (id) initWithPlatform: (PLSimulatorPlatform *) platform app: (PLSimulatorApplication *) app {
-    if ((self = [super init]) == nil)
-        return nil;
-    
-    _platform = platform;
-    _app = app;
-
+- (id) initWithPlatform:(PLSimulatorPlatform *)platform app:(PLSimulatorApplication *)app {
+    if ((self = [super init])) {
+        _platform = platform;
+        _app = app;
+        self.preferredDeviceFamily = [PLSimulatorDeviceFamily ipadFamily]; // Default to iPad
+    }
     return self;
 }
 
@@ -63,12 +69,11 @@
  * 
  * @param text Informative text.
  */
-- (void) displayLaunchError: (NSString *) text {
+- (void)displayLaunchError:(NSString *)text {
     NSAlert *alert = [NSAlert new];
     [alert setMessageText: NSLocalizedString(@"Could not launch the iPad/iPhone application.", @"Launch failure alert title")];
     [alert setInformativeText: text];
     [alert runModal];
-    
     [[NSApplication sharedApplication] terminate: self];
 }
 
@@ -140,26 +145,17 @@
     config = [[C(DTiPhoneSimulatorSessionConfig) alloc] init];
     [config setApplicationToSimulateOnStart:appSpec];
     [config setSimulatedSystemRoot:sdkRoot];
-    [config setSimulatedDeviceFamily:@(DTiPhoneSimulatoriPadFamily)];
+    [config setSimulatedDeviceFamily:@(self.preferredDeviceFamily.deviceFamilyCode)];
     [config setSimulatedApplicationShouldWaitForDebugger:NO];
     [config setLocalizedClientName:@"SimLauncher"];
     [config setSimulatedApplicationLaunchArgs:@[]];
     [config setSimulatedApplicationLaunchEnvironment:@{}];
-    [config setSimulatedDeviceInfoName:@"iPad"];
+    if (self.preferredDeviceFamily.deviceFamilyCode == 1) {
+        [config setSimulatedDeviceInfoName:@"iPhone Retina (3.5-inch)"];
+    } else {
+        [config setSimulatedDeviceInfoName:@"iPad"];
+    }
     [config setSimulatedArchitecture:@"x86_64"];
-
-        /* Prefer iPad over iPhone, but only if we know it will work. */
-        // TODO: Make configurable.
-        /*
-        if (sdk != nil &&
-            [_app.deviceFamilies containsObject: [PLSimulatorDeviceFamily ipadFamily]] && 
-            [sdk.deviceFamilies containsObject: [PLSimulatorDeviceFamily ipadFamily]]) 
-        {
-            [config setSimulatedDeviceFamily: [NSNumber numberWithInt: DTiPhoneSimulatoriPadFamily]]; 
-        } else {
-            [config setSimulatedDeviceFamily: [NSNumber numberWithInt: DTiPhoneSimulatoriPhoneFamily]];
-        }*/
-
     
     /* Start the session */
     session = [[C(DTiPhoneSimulatorSession) alloc] init];

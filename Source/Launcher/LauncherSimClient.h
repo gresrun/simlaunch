@@ -28,20 +28,15 @@
 
 #import <Cocoa/Cocoa.h>
 #import "PLSimulator.h"
-
 #import "iPhoneSimulatorRemoteClient.h"
 
-@interface LauncherSimClient : NSObject <DTiPhoneSimulatorSessionDelegate> {
-@private
-    /** Platform to use for launching. */
-    PLSimulatorPlatform *_platform;
 
-    /** Application to be launched. */
-    PLSimulatorApplication *_app;
-}
+@interface LauncherSimClient : NSObject <DTiPhoneSimulatorSessionDelegate>
 
-- (id) initWithPlatform: (PLSimulatorPlatform *) platform app: (PLSimulatorApplication *) app;
+@property (nonatomic) PLSimulatorDeviceFamily *preferredDeviceFamily;
 
-- (void) launch;
+- (id)initWithPlatform:(PLSimulatorPlatform *)platform app:(PLSimulatorApplication *)app;
+
+- (void)launch;
 
 @end
